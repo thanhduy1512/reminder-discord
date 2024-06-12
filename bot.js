@@ -10,8 +10,9 @@ const TOKEN = process.env.TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
 // Initial days and hour
-let daysToSend = [0, 2, 4]; // For example, Monday, Wednesday, Friday
-let sendHour = 14; // For example, 14:00 (2:00 PM)
+let daysToSend = [0, 2, 3, 4]; // For example, Monday, Wednesday, Friday
+let sendHour = 16; // For example, 14:00 (2:00 PM)
+let sendMinute = 23;
 
 const client = new Client({
   intents: [
@@ -28,11 +29,13 @@ client.once('ready', () => {
   cron.schedule('* * * * *', () => {
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     const currentDay = now.getDay();
+    console.log('now', currentHour, currentMinute, currentDay);
     if (
       daysToSend.includes(currentDay) &&
       currentHour === sendHour &&
-      now.getMinutes() === 0
+      currentMinute === sendMinute
     ) {
       const channel = client.channels.cache.get(CHANNEL_ID);
       if (channel) {
