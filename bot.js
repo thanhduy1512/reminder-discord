@@ -1,4 +1,9 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ChannelType,
+} from 'discord.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -19,24 +24,43 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 
-  cron.schedule('* * * * *', () => {
+  cron.schedule('* * * * *', async () => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentDay = now.getDay();
     const currentMinute = now.getMinutes();
 
-    reminders.forEach((reminder) => {
-      if (
-        reminder.day === currentDay &&
-        reminder.hour === currentHour &&
-        reminder.minute === currentMinute
-      ) {
-        const channel = client.channels.cache.get(CHANNEL_ID);
-        if (channel) {
-          channel.send('This is your scheduled message!');
+    for (const reminder of reminders) {
+      console.log(currentDay, currentHour, currentMinute);
+      console.log(reminder);
+      try {
+        if (
+          reminder.day === currentDay &&
+          reminder.hour === currentHour &&
+          reminder.minute === currentMinute
+        ) {
+          const channel = await client.channels.fetch(CHANNEL_ID);
+          if (channel && channel.type === ChannelType.GuildText) {
+            const embed = new EmbedBuilder()
+              .setTitle('Thông báo có lịch học!')
+              .setDescription(reminder.description)
+              .setColor(0x00ae86)
+              .setTimestamp(now);
+
+            const fields = [];
+            fields.push({
+              name: 'Link Teams',
+              value: `[Teams](https://teams.microsoft.com)`,
+            });
+            embed.addFields(fields);
+
+            await channel.send({ embeds: [embed] });
+          }
         }
+      } catch (error) {
+        console.log('error', error);
       }
-    });
+    }
   });
 });
 
@@ -49,7 +73,8 @@ client.on('interactionCreate', async (interaction) => {
     const day = options.getInteger('day');
     const hour = options.getInteger('hour');
     const minute = options.getInteger('minute');
-    reminders.push({ day, hour, minute });
+    const description = options.getString('description');
+    reminders.push({ day, hour, minute, description });
     await interaction.reply(
       `Added reminder for day ${day} at hour ${hour}:${minute}`
     );

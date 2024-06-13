@@ -39,6 +39,12 @@ const commands = [
         description: 'Minute of the hour (0-59)',
         required: true,
       },
+      {
+        name: 'description',
+        type: 3, // STRING
+        description: 'Tên môn học',
+        required: true,
+      },
     ],
   },
   {
