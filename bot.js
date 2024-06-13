@@ -1,18 +1,12 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
-
-// Load environment variables from .env file
 dotenv.config();
-// Define your bot's token
+
 const TOKEN = process.env.TOKEN;
-// Define the channel ID where you want to send messages
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
-// Initial days and hour
-let daysToSend = [0, 2, 3, 4]; // For example, Monday, Wednesday, Friday
-let sendHour = 16; // For example, 14:00 (2:00 PM)
-let sendMinute = 23;
+let reminders = [];
 
 const client = new Client({
   intents: [
@@ -25,59 +19,62 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 
-  // Schedule the task to run every minute
   cron.schedule('* * * * *', () => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
     const currentDay = now.getDay();
-    console.log('now', currentHour, currentMinute, currentDay);
-    if (
-      daysToSend.includes(currentDay) &&
-      currentHour === sendHour &&
-      currentMinute === sendMinute
-    ) {
-      const channel = client.channels.cache.get(CHANNEL_ID);
-      if (channel) {
-        channel.send('This is your scheduled message!');
+    const currentMinute = now.getMinutes();
+
+    reminders.forEach((reminder) => {
+      if (
+        reminder.day === currentDay &&
+        reminder.hour === currentHour &&
+        currentMinute === 0
+      ) {
+        const channel = client.channels.cache.get(CHANNEL_ID);
+        if (channel) {
+          channel.send('This is your scheduled message!');
+        }
       }
-    }
+    });
   });
 });
 
-// Command to set the days
-client.on('messageCreate', (message) => {
-  console.log(message);
-  if (message.content.startsWith('!setdays')) {
-    console.log(message.content);
-    const args = message.content.split(' ').slice(1);
-    daysToSend = args.map(Number);
-    message.channel.send(
-      `Days to send messages have been updated to: ${daysToSend}`
-    );
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName, options } = interaction;
+
+  if (commandName === 'addreminder') {
+    const day = options.getInteger('day');
+    const hour = options.getInteger('hour');
+    reminders.push({ day, hour });
+    await interaction.reply(`Added reminder for day ${day} at hour ${hour}`);
   }
 
-  // Command to set the hour
-  if (message.content.startsWith('!sethour')) {
-    const args = message.content.split(' ').slice(1);
-    const hour = parseInt(args[0], 10);
-    if (0 <= hour && hour <= 23) {
-      sendHour = hour;
-      message.channel.send(
-        `Hour to send messages has been updated to: ${sendHour}`
-      );
+  if (commandName === 'removereminder') {
+    const day = options.getInteger('day');
+    const hour = options.getInteger('hour');
+    reminders = reminders.filter(
+      (reminder) => !(reminder.day === day && reminder.hour === hour)
+    );
+    await interaction.reply(`Removed reminder for day ${day} at hour ${hour}`);
+  }
+
+  if (commandName === 'showreminders') {
+    if (reminders.length > 0) {
+      const reminderMessages = reminders
+        .map((reminder) => `Day: ${reminder.day}, Hour: ${reminder.hour}`)
+        .join('\n');
+      await interaction.reply(`Current reminders:\n${reminderMessages}`);
     } else {
-      message.channel.send(
-        'Invalid hour. Please provide an hour between 0 and 23.'
-      );
+      await interaction.reply('No reminders set.');
     }
   }
 
-  // Command to show current settings
-  if (message.content.startsWith('!showsettings')) {
-    message.channel.send(
-      `Current days: ${daysToSend}\nCurrent hour: ${sendHour}`
-    );
+  if (commandName === 'clearreminders') {
+    reminders = [];
+    await interaction.reply('All reminders have been cleared.');
   }
 });
 
