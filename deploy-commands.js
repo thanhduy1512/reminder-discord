@@ -33,6 +33,12 @@ const commands = [
         description: 'Hour of the day (0-23)',
         required: true,
       },
+      {
+        name: 'minute',
+        type: 4, // INTEGER
+        description: 'Minute of the hour (0-59)',
+        required: true,
+      },
     ],
   },
   {
@@ -58,6 +64,12 @@ const commands = [
         name: 'hour',
         type: 4, // INTEGER
         description: 'Hour of the day (0-23)',
+        required: true,
+      },
+      {
+        name: 'minute',
+        type: 4, // INTEGER
+        description: 'Minute of the hour (0-59)',
         required: true,
       },
     ],

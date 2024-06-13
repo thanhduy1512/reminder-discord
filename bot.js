@@ -29,7 +29,7 @@ client.once('ready', () => {
       if (
         reminder.day === currentDay &&
         reminder.hour === currentHour &&
-        currentMinute === 0
+        reminder.minute === currentMinute
       ) {
         const channel = client.channels.cache.get(CHANNEL_ID);
         if (channel) {
@@ -48,23 +48,37 @@ client.on('interactionCreate', async (interaction) => {
   if (commandName === 'addreminder') {
     const day = options.getInteger('day');
     const hour = options.getInteger('hour');
-    reminders.push({ day, hour });
-    await interaction.reply(`Added reminder for day ${day} at hour ${hour}`);
+    const minute = options.getInteger('minute');
+    reminders.push({ day, hour, minute });
+    await interaction.reply(
+      `Added reminder for day ${day} at hour ${hour}:${minute}`
+    );
   }
 
   if (commandName === 'removereminder') {
     const day = options.getInteger('day');
     const hour = options.getInteger('hour');
+    const minute = options.getInteger('minute');
     reminders = reminders.filter(
-      (reminder) => !(reminder.day === day && reminder.hour === hour)
+      (reminder) =>
+        !(
+          reminder.day === day &&
+          reminder.hour === hour &&
+          reminder.minute === minute
+        )
     );
-    await interaction.reply(`Removed reminder for day ${day} at hour ${hour}`);
+    await interaction.reply(
+      `Removed reminder for day ${day} at hour ${hour}:${minute}`
+    );
   }
 
   if (commandName === 'showreminders') {
     if (reminders.length > 0) {
       const reminderMessages = reminders
-        .map((reminder) => `Day: ${reminder.day}, Hour: ${reminder.hour}`)
+        .map(
+          (reminder) =>
+            `Day: ${reminder.day}, Hour: ${reminder.hour}, Minute: ${reminder.minute}`
+        )
         .join('\n');
       await interaction.reply(`Current reminders:\n${reminderMessages}`);
     } else {
